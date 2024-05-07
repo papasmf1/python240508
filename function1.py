@@ -1,16 +1,42 @@
 # function1.py
-#불변형식
-a = 1.2
-print("a id:", id(a) )
-a = 2.3 
-print("a id:", id(a) )
 
-#가변형식
-lst = [1,2,3]
-print("lst id:", id(lst) )
-lst.append(4)
-print("lst id:", id(lst) )
-print(lst)
+#함수 이름 해석 규칙(LGB)
+#전역변수가 있는 경우 
+x = 1 
+def func(a):
+    return a+x 
+
+#호출
+print(func(1))
+
+#지역변수가 있는 경우
+def func2(a):
+    x = 5 
+    return a+x 
+
+#호출
+print(func2(1))
+
+
+#함수의 기본값
+def times(a=10, b=20):
+    return a*b 
+
+#호출
+print(times())
+print(times(5))
+print(times(5,6))
+
+#키워드인자방식(디테일기술)
+def connectURI(server, port):
+    strURL = "https://" + server + ":" + port 
+    return strURL 
+
+#호출
+print(connectURI("multi.com", "80"))
+print(connectURI(port="80", server="naver.com"))
+
+
 
 #가변형식
 def change(x):
