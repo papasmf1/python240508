@@ -37,30 +37,20 @@ print(connectURI("multi.com", "80"))
 print(connectURI(port="80", server="naver.com"))
 
 
+#가변인자 처리 
+def union(*ar):
+    #지역변수 저장(list)
+    result = []
+    for item in ar:
+        for x in item:
+            if x not in result:
+                result.append(x)
+    return result 
 
-#가변형식
-def change(x):
-    #지역변수로 깊은 복사
-    x1 = x[:]
-    x1[0] = "H"
-    print("change함수내부:", x1)
+#호출(중단점 추가)
+print(union("HAM","EGG"))
+print(union("HAM","EGG","SPAM"))
 
-#함수 호출
-wordlist = ["J","A","M"]
-change(wordlist)
-print("함수 호출후:", wordlist)
-
-#불변형식인데 읽기/쓰기를 하는 경우
-g = 1 
-def testScope(a):
-    #전역변수를 맵핑
-    #global g 
-    g = 2 
-    return g + a 
-
-#함수 호출
-print( testScope(1) ) 
-print("전역변수 g:", g)
 
 #디버깅 
 #교집합 리턴하는 함수 
@@ -75,3 +65,7 @@ def intersect(prelist, postlist):
 #호출
 print( intersect("HAM", "SPAM") )
 
+#람다 함수 
+g = lambda x,y:x*y 
+print( g(3,4) )
+print( g(5,6) )
