@@ -4,7 +4,7 @@ import sqlite3
 #연결객체(인스턴스)
 # con = sqlite3.connect(":memory:")
 #영구적으로 데이터베이스 파일에 저장
-con = sqlite3.connect("c:\\work3\\test.db")
+con = sqlite3.connect("c:\\work3\\sample.db")
 
 #실제 구문을 실행할 커서 객체 
 cur = con.cursor() 
@@ -28,3 +28,5 @@ cur.execute("select * from PhoneBook;")
 print("---fetchall()---")
 cur.execute("select * from PhoneBook;")
 print(cur.fetchall())
+#작업 정상 완료
+con.commit() 
