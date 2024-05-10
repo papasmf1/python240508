@@ -5,123 +5,109 @@ from PyQt5 import uic
 import sqlite3
 import os.path 
 
-#DB파일이 없으면 만들고 있다면 접속한다. 
-if os.path.exists("ProductList.db"):
-    con = sqlite3.connect("ProductList.db")
-    cur = con.cursor()
-else: 
-    con = sqlite3.connect("ProductList.db")
-    cur = con.cursor()
-    cur.execute(
-        "create table Products (id integer primary key autoincrement, Name text, Price integer);")
-
-#디자인 파일을 로딩
-form_class = uic.loadUiType("ProductList3.ui")[0]
-
-class Window(QMainWindow, form_class):
+# Data handler class for managing database operations
+class DataHandler:
     def __init__(self):
-        super().__init__()
-        self.setupUi(self)
-        
-        #초기값 셋팅 
-        self.id = 0 
-        self.name = ""
-        self.price = 0 
+        # Check if the database file exists
+        if os.path.exists("ProductList.db"):
+            self.con = sqlite3.connect("ProductList.db")
+            self.cur = self.con.cursor()
+        else: 
+            self.con = sqlite3.connect("ProductList.db")
+            self.cur = self.con.cursor()
+            self.cur.execute(
+                "create table Products (id integer primary key autoincrement, Name text, Price integer);")
 
-        #QTableWidget의 컬럼폭 셋팅하기 
+    def addProduct(self, name, price):
+        self.cur.execute("insert into Products (Name, Price) values(?,?);", (name, price))
+        self.con.commit()
+
+    def updateProduct(self, id, name, price):
+        self.cur.execute("update Products set name=?, price=? where id=?;", (name, price, id))
+        self.con.commit()
+
+    def removeProduct(self, id):
+        strSQL = "delete from Products where id=" + str(id)
+        self.cur.execute(strSQL)
+        self.con.commit()
+
+    def getProducts(self):
+        self.cur.execute("select * from Products;") 
+        return self.cur.fetchall()
+
+# UI class
+class MainWindow(QMainWindow):
+    def __init__(self, data_handler):
+        super().__init__()
+        self.data_handler = data_handler
+        self.loadUi()
+        self.setupUi()
+
+    def loadUi(self):
+        # Load the UI file
+        uic.loadUi("ProductList3.ui", self)
+
+    def setupUi(self):
+        # Set up UI components
         self.tableWidget.setColumnWidth(0, 100)
         self.tableWidget.setColumnWidth(1, 200)
         self.tableWidget.setColumnWidth(2, 100)
-        #QTableWidget의 헤더 셋팅하기
         self.tableWidget.setHorizontalHeaderLabels(["제품ID","제품명", "가격"])
-        #QTableWidget의 컬럼 정렬하기 
-        #self.tableWidget.horizontalHeaderItem(0).setTextAlignment(Qt.AlignRight)
-        #self.tableWidget.horizontalHeaderItem(2).setTextAlignment(Qt.AlignRight)
-        #탭키로 네비게이션 금지 
         self.tableWidget.setTabKeyNavigation(False)
-        #self.tableWidget.setFocusPolicy(Qt.NoFocus)
-        #엔터키를 클릭하면 다음 컨트롤로 이동하는 경우 
-        # self.prodID.tabOrder = 0 
-        # self.prodName.tabOrder = 1 
-        # self.prodPrice.tabOrder = 2 
-        #QLineEdit으로 수정함
         self.prodID.returnPressed.connect(lambda: self.focusNextChild())
         self.prodName.returnPressed.connect(lambda: self.focusNextChild())
         self.prodPrice.returnPressed.connect(lambda: self.focusNextChild())
-        #더블클릭 시그널 처리
         self.tableWidget.doubleClicked.connect(self.doubleClick)
+        self.getProduct()
 
     def addProduct(self):
-        #입력 파라메터 처리 
-        self.name = self.prodName.text()
-        self.price = self.prodPrice.text()
-        cur.execute("insert into Products (Name, Price) values(?,?);", 
-            (self.name, self.price))
-        #리프레시
+        name = self.prodName.text()
+        price = self.prodPrice.text()
+        self.data_handler.addProduct(name, price)
         self.getProduct() 
-        #입력,수정,삭제 작업후에는 커밋을 한다. 
-        con.commit() 
 
     def updateProduct(self):
-        #업데이트 작업시 파라메터 처리 
-        self.id  = self.prodID.text()
-        self.name = self.prodName.text()
-        self.price = self.prodPrice.text()
-        cur.execute("update Products set name=?, price=? where id=?;", 
-            (self.name, self.price, self.id))
-        #리프레시
-        self.getProduct() 
-        #입력,수정,삭제 작업후에는 커밋을 한다. 
-        con.commit()  
+        id = self.prodID.text()
+        name = self.prodName.text()
+        price = self.prodPrice.text()
+        self.data_handler.updateProduct(id, name, price)
+        self.getProduct()  
 
     def removeProduct(self):
-        #삭제 파라메터 처리 
-        self.id  = self.prodID.text() 
-        strSQL = "delete from Products where id=" + str(self.id)
-        cur.execute(strSQL)
-        #리프레시
-        self.getProduct() 
-        #입력,수정,삭제 작업후에는 커밋을 한다. 
-        con.commit()  
+        id = self.prodID.text() 
+        self.data_handler.removeProduct(id)
+        self.getProduct()  
 
     def getProduct(self):
-        #검색 결과를 보여주기전에 기존 컨텐트를 삭제(헤더는 제외)
         self.tableWidget.clearContents()
-
-        cur.execute("select * from Products;") 
-        #행숫자 카운트 
+        products = self.data_handler.getProducts()
         row = 0 
-        for item in cur: 
+        for item in products: 
             int_as_strID = "{:10}".format(item[0])
             int_as_strPrice = "{:10}".format(item[2])
-            
-            #각 열을 Item으로 생성해서 숫자를 오른쪽으로 정렬해서 출력한다. 
             itemID = QTableWidgetItem(int_as_strID) 
             itemID.setTextAlignment(Qt.AlignRight) 
             self.tableWidget.setItem(row, 0, itemID)
-            
-            #제품명은 그대로 출력한다. 
             self.tableWidget.setItem(row, 1, QTableWidgetItem(item[1]))
-            
-            #각 열을 Item으로 생성해서 숫자를 오른쪽으로 정렬해서 출력한다. 
             itemPrice = QTableWidgetItem(int_as_strPrice) 
             itemPrice.setTextAlignment(Qt.AlignRight) 
             self.tableWidget.setItem(row, 2, itemPrice)
-            
             row += 1
-            print("row: ", row)  
 
     def doubleClick(self):
         self.prodID.setText(self.tableWidget.item(self.tableWidget.currentRow(), 0).text())
         self.prodName.setText(self.tableWidget.item(self.tableWidget.currentRow(), 1).text())
         self.prodPrice.setText(self.tableWidget.item(self.tableWidget.currentRow(), 2).text())
 
+# Create an instance of DataHandler
+data_handler = DataHandler()
 
-#인스턴스를 생성한다. 
+# Create an instance of QApplication
 app = QApplication(sys.argv)
-myWindow = Window()
+
+# Create an instance of MainWindow and pass the data handler instance
+myWindow = MainWindow(data_handler)
 myWindow.show()
-app.exec_()
 
-
-
+# Execute the application
+sys.exit(app.exec_())
